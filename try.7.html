@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Path2Fund – Scholarship Eligibility Reminder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f8f9fa;
+      padding-bottom: 80px;
+    }
+    h1, h2, h3, h4 { color: #374151; font-weight: 600; }
+    p { color: #555; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+    .screen { display: none; flex-direction: column; min-height: 100vh; }
+    .screen.active { display: flex; }
+    .card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 1rem;
+      padding: 1.25rem;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    .form-group { margin-bottom: 1rem; }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+      color: #555;
+      font-weight: 500;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.2);
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      transform: scale(1.2);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1rem;
+      border-radius: 0.6rem;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      text-align: center;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+    }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-outline {
+      background: white;
+      border: 1px solid #d1d5db;
+      color: #374151;
+    }
+    .btn-outline:hover { background: #f3f4f6; }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid #e5e7eb;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem 0.5rem 0 0;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #6b7280;
+      background: #f3f4f6;
+    }
+    .tab.active {
+      background: #4f46e5;
+      color: white;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .scholarship-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      padding: 1rem;
+      transition: 0.2s ease;
+    }
+    .scholarship-card:hover {
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      border-color: #4f46e5;
+    }
+    .chip {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.5rem;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+      color: white;
+    }
+    .chip.high { background: #dc2626; }
+    .chip.merit { background: #ea580c; }
+    .chip.income { background: #16a34a; }
+    .chip.sports { background: #059669; }
+    .chip.disability { background: #0ea5e9; }
+    .chip.single { background: #d97706; }
+    .chip.first { background: #7c3aed; }
+
+    .status {
+      font-size: 0.8rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.5rem;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+    .status.not-applied { background: #fef3c7; color: #b45309; }
+    .status.applied { background: #bfdbfe; color: #1d4ed8; }
+    .status.under-review { background: #e0f2fe; color: #0369a1; }
+    .status.approved { background: #dcfce7; color: #16a34a; }
+    .status.rejected { background: #fee2e2; color: #dc2626; }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: 0.7rem 0;
+      z-index: 10;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: #6b7280;
+      cursor: pointer;
+    }
+    .nav-item.active { color: #4f46e5; }
+
+    .mt-1 { margin-top: 0.75rem; }
+    .mb-1 { margin-bottom: 0.75rem; }
+    .section-title {
+      margin: 1rem 0 0.5rem;
+      font-size: 1rem;
+      color: #4f46e5;
+      font-weight: 700;
+    }
+    .info-box {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 0.8rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1rem;
+      color: #3730a3;
+      font-size: 0.92rem;
+    }
+    .verify-badge {
+      display: inline-block;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+    .verified { background: #dcfce7; color: #166534; }
+    .pending { background: #fef3c7; color: #92400e; }
+    .not-eligible { background: #fee2e2; color: #b91c1c; }
+    .info { background: #e0f2fe; color: #075985; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ONBOARDING -->
+  <div class="screen active" id="onboardingScreen">
+    <div class="card">
+      <h1>Welcome to Path2Fund</h1>
+      <p class="mb-1">
+        We help you discover scholarships you qualify for, track applications, and never miss deadlines.
+      </p>
+      <button class="btn btn-primary" onclick="show('profileScreen')">Get Started</button>
+      <button class="btn btn-outline mt-1" onclick="show('dashboardScreen')">Skip</button>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="profileScreen">
+    <div class="card">
+      <h1>Tell Us About You</h1>
+      <form id="profileForm" onsubmit="saveProfile(); return false;">
+
+        <div class="tabs">
+          <div class="tab active" data-tab="basic">Basic</div>
+          <div class="tab" data-tab="academics">Academics</div>
+          <div class="tab" data-tab="family">Family</div>
+          <div class="tab" data-tab="firstGraduate">First Graduate</div>
+          <div class="tab" data-tab="special">Special</div>
+        </div>
+
+        <!-- BASIC -->
+        <div class="tab-content active" id="basicTab">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="name" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" id="phone" />
+          </div>
+          <div class="form-group">
+            <label>District (Tamil Nadu)</label>
+            <input type="text" id="district" />
+          </div>
+        </div>
+
+        <!-- ACADEMICS -->
+        <div class="tab-content" id="academicsTab">
+          <div class="form-group">
+            <label>10th Percentage</label>
+            <input type="number" id="tenthPercent" min="0" max="100" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label>12th Percentage</label>
+            <input type="number" id="twelfthPercent" min="0" max="100" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label>12th Cutoff</label>
+            <input type="number" id="cutoff" min="0" max="200" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label>Mode of Studying</label>
+            <select id="studyMode">
+              <option value="day_scholar">Day Scholar</option>
+              <option value="hosteller">Hosteller</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Language / Medium of Study</label>
+            <select id="studyLanguage">
+              <option value="tamil">Tamil Medium</option>
+              <option value="english">English Medium</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- FAMILY -->
+        <div class="tab-content" id="familyTab">
+          <h3 class="section-title">Father Details</h3>
+          <div class="form-group">
+            <label>Father Occupation</label>
+            <input type="text" id="fatherOccupation" placeholder="Eg: Teacher / Farmer / Driver" />
+          </div>
+          <div class="form-group">
+            <label>Father Job Type</label>
+            <select id="fatherJobType">
+              <option value="">Select</option>
+              <option value="government">Government</option>
+              <option value="private">Private</option>
+              <option value="daily_wage">Daily Wage</option>
+              <option value="own_business">Own Business</option>
+              <option value="farmer">Farmer</option>
+              <option value="unemployed">Unemployed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Father Annual Income (₹)</label>
+            <input type="number" id="fatherIncome" min="0" />
+          </div>
+
+          <h3 class="section-title">Mother Details</h3>
+          <div class="form-group">
+            <label>Mother Occupation</label>
+            <input type="text" id="motherOccupation" placeholder="Eg: Tailor / Homemaker / Teacher" />
+          </div>
+          <div class="form-group">
+            <label>Mother Job Type</label>
+            <select id="motherJobType">
+              <option value="">Select</option>
+              <option value="government">Government</option>
+              <option value="private">Private</option>
+              <option value="daily_wage">Daily Wage</option>
+              <option value="own_business">Own Business</option>
+              <option value="farmer">Farmer</option>
+              <option value="homemaker">Homemaker</option>
+              <option value="unemployed">Unemployed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mother Annual Income (₹)</label>
+            <input type="number" id="motherIncome" min="0" />
+          </div>
+
+          <div class="form-group">
+            <label>Number of Siblings</label>
+            <input type="number" id="numSiblings" min="0" />
+          </div>
+        </div>
+
+        <!-- FIRST GRADUATE -->
+        <div class="tab-content" id="firstGraduateTab">
+          <div class="info-box">
+            First Graduate usually means: <strong>no parent / no sibling has completed a degree</strong>, and the student is the first graduate in the family.
+          </div>
+
+          <div class="form-group">
+            <label>Are you claiming First Graduate status?</label>
+            <select id="isFirstGraduateClaim">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Has your father completed any degree / diploma?</label>
+            <select id="fatherGraduate">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Has your mother completed any degree / diploma?</label>
+            <select id="motherGraduate">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Has any brother / sister completed a degree?</label>
+            <select id="siblingsGraduate">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Do you have First Graduate Certificate?</label>
+            <select id="hasFirstGraduateCertificate">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- SPECIAL -->
+        <div class="tab-content" id="specialTab">
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="isDisabled" onchange="toggleDisability()" />
+            <label for="isDisabled">Differently Abled</label>
+          </div>
+          <div class="form-group" id="disabilityField" style="display:none;">
+            <label>Disability Percentage</label>
+            <input type="number" id="disabilityPercent" min="0" max="100" />
+          </div>
+
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="hasSports" />
+            <label for="hasSports">Sports Quota</label>
+          </div>
+          <div class="form-group">
+            <label>Sports Level</label>
+            <select id="sportsLevel">
+              <option value="district">District</option>
+              <option value="state">State</option>
+              <option value="national">National</option>
+              <option value="international">International</option>
+            </select>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="isSingleParent" />
+            <label for="isSingleParent">Single Parent</label>
+          </div>
+        </div>
+
+        <div class="mt-1">
+          <button class="btn btn-primary" type="submit">Save Profile</button>
+          <button class="btn btn-outline mt-1" type="button" onclick="show('dashboardScreen')">Skip</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="screen" id="dashboardScreen">
+    <div class="card">
+      <div class="card-header">
+        <h1>Eligible Scholarships</h1>
+      </div>
+      <p>Here are scholarships you may qualify for:</p>
+      <div class="grid" id="scholarshipsGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Application Tracking</h2>
+      </div>
+      <div class="grid" id="trackingGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Upcoming Deadlines</h2>
+      </div>
+      <div class="grid" id="remindersGrid"></div>
+    </div>
+  </div>
+
+  <!-- DETAILS -->
+  <div class="screen" id="detailsScreen">
+    <div class="card">
+      <h1 id="scholarshipName">Scholarship Details</h1>
+      <p><strong>Amount:</strong> <span id="scholarshipAmount"></span></p>
+      <p><strong>Last Date:</strong> <span id="scholarshipLastDate"></span></p>
+      <p><strong>Eligibility:</strong> <span id="scholarshipEligibility"></span></p>
+      <p><strong>Required Documents:</strong> <span id="scholarshipDocs"></span></p>
+      <p><strong>Reason:</strong> <span id="scholarshipReason"></span></p>
+      <p><strong>Verification Status:</strong> <span id="scholarshipVerification"></span></p>
+
+      <div class="mt-1">
+        <select id="statusSelect">
+          <option value="not_applied">Not Applied</option>
+          <option value="applied">Applied</option>
+          <option value="under_review">Under Review</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <button class="btn btn-primary mt-1" id="saveStatusBtn">Save Status</button>
+      </div>
+
+      <div class="mt-1">
+        <a id="officialLink" class="btn btn-outline" target="_blank">Official Portal</a>
+      </div>
+
+      <div class="mt-1">
+        <button class="btn btn-outline" onclick="show('dashboardScreen')">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="bottom-nav">
+  <div class="nav-item active" onclick="show('dashboardScreen')">🏠 Home</div>
+  <div class="nav-item" onclick="show('profileScreen')">👤 Profile</div>
+</footer>
+
+<script>
+  const getStore = (key, def) => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : def;
+    } catch (e) { return def; }
+  };
+
+  const setStore = (key, val) => {
+    localStorage.setItem(key, JSON.stringify(val));
+  };
+
+  let appState = {
+    profile: getStore('profile', null),
+    applications: getStore('applications', {})
+  };
+
+  const scholarships = [
+    {
+      id: 1,
+      name: "First Graduate Scholarship",
+      amount: "₹25,000",
+      lastDate: "2026-07-15",
+      eligibility: "Student must be the first graduate in the family and income should be within limit",
+      docs: "Income Certificate, Community Certificate, First Graduate Certificate",
+      officialLink: "https://www.tnscholarship.in",
+      chips: ["first", "income"]
+    },
+    {
+      id: 2,
+      name: "Merit Scholarship",
+      amount: "₹30,000",
+      lastDate: "2026-08-10",
+      eligibility: "12th marks above 85%",
+      docs: "Marksheet, Aadhaar, Bonafide Certificate",
+      officialLink: "https://scholarships.gov.in",
+      chips: ["merit", "high"]
+    },
+    {
+      id: 3,
+      name: "Differently Abled Scholarship",
+      amount: "₹40,000",
+      lastDate: "2026-09-01",
+      eligibility: "Disability 40% and above",
+      docs: "Disability Certificate, Aadhaar, Income Certificate",
+      officialLink: "https://scholarships.gov.in",
+      chips: ["disability"]
+    },
+    {
+      id: 4,
+      name: "Sports Quota Scholarship",
+      amount: "₹20,000",
+      lastDate: "2026-07-30",
+      eligibility: "District / State / National sports achievements",
+      docs: "Sports Certificate, Bonafide Certificate",
+      officialLink: "https://scholarships.gov.in",
+      chips: ["sports"]
+    },
+    {
+      id: 5,
+      name: "Single Parent Scholarship",
+      amount: "₹15,000",
+      lastDate: "2026-08-20",
+      eligibility: "Student from single parent family",
+      docs: "Family Certificate, Aadhaar",
+      officialLink: "https://scholarships.gov.in",
+      chips: ["single"]
+    }
+  ];
+
+  let selectedScholarship = null;
+
+  function show(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+      screen.classList.remove('active');
+    });
+    document.getElementById(screenId).classList.add('active');
+
+    if (screenId === 'dashboardScreen') renderDashboard();
+    if (screenId === 'profileScreen') loadProfile();
+  }
+
+  function toggleDisability() {
+    const checked = document.getElementById('isDisabled').checked;
+    document.getElementById('disabilityField').style.display = checked ? 'block' : 'none';
+  }
+
+  function getVerificationBadgeClass(status) {
+    if (status === "Verified") return "verify-badge verified";
+    if (status === "Pending Verification" || status === "Need to Fill Details") return "verify-badge pending";
+    if (status === "Not Eligible" || status === "Income Exceeded" || status === "Not Claimed") return "verify-badge not-eligible";
+    return "verify-badge info";
+  }
+
+  // FIXED FIRST GRADUATE CHECK
+  function checkFirstGraduateEligibility(profile) {
+    const claim = (profile.isFirstGraduateClaim || "").trim().toLowerCase() === "yes";
+    const fatherGraduate = (profile.fatherGraduate || "").trim().toLowerCase() === "yes";
+    const motherGraduate = (profile.motherGraduate || "").trim().toLowerCase() === "yes";
+    const siblingsGraduate = (profile.siblingsGraduate || "").trim().toLowerCase() === "yes";
+    const hasCertificate = (profile.hasFirstGraduateCertificate || "").trim().toLowerCase() === "yes";
+
+    const totalIncome = Number(profile.totalIncome || 0);
+    const incomeEligible = totalIncome <= 250000;
+
+    const detailsFilled =
+      profile.isFirstGraduateClaim &&
+      profile.fatherGraduate &&
+      profile.motherGraduate &&
+      profile.siblingsGraduate &&
+      profile.hasFirstGraduateCertificate;
+
+    if (!detailsFilled) {
+      return {
+        eligible: false,
+        verified: false,
+        status: "Need to Fill Details",
+        reason: "Please complete all First Graduate details."
+      };
+    }
+
+    if (!claim) {
+      return {
+        eligible: false,
+        verified: false,
+        status: "Not Claimed",
+        reason: "Student has not claimed First Graduate status."
+      };
+    }
+
+    if (fatherGraduate || motherGraduate || siblingsGraduate) {
+      return {
+        eligible: false,
+        verified: false,
+        status: "Not Eligible",
+        reason: "Parent or sibling has already completed a degree."
+      };
+    }
+
+    if (!incomeEligible) {
+      return {
+        eligible: false,
+        verified: false,
+        status: "Income Exceeded",
+        reason: "Family income exceeds ₹2,50,000."
+      };
+    }
+
+    if (!hasCertificate) {
+      return {
+        eligible: false,
+        verified: false,
+        status: "Pending Verification",
+        reason: "Eligible by family background, but First Graduate Certificate is required."
+      };
+    }
+
+    return {
+      eligible: true,
+      verified: true,
+      status: "Verified",
+      reason: "Verified as First Graduate. No parent/sibling is a graduate, certificate available, and income is within limit."
+    };
+  }
+
+  function saveProfile() {
+    const fatherIncome = Number(document.getElementById('fatherIncome').value || 0);
+    const motherIncome = Number(document.getElementById('motherIncome').value || 0);
+
+    const profile = {
+      name: document.getElementById('name').value,
+      email: document.getElementById('email').value,
+      phone: document.getElementById('phone').value,
+      district: document.getElementById('district').value,
+
+      tenthPercent: Number(document.getElementById('tenthPercent').value || 0),
+      twelfthPercent: Number(document.getElementById('twelfthPercent').value || 0),
+      cutoff: Number(document.getElementById('cutoff').value || 0),
+      studyMode: document.getElementById('studyMode').value,
+      studyLanguage: document.getElementById('studyLanguage').value,
+
+      fatherOccupation: document.getElementById('fatherOccupation').value,
+      fatherJobType: document.getElementById('fatherJobType').value,
+      fatherIncome,
+
+      motherOccupation: document.getElementById('motherOccupation').value,
+      motherJobType: document.getElementById('motherJobType').value,
+      motherIncome,
+
+      totalIncome: fatherIncome + motherIncome,
+      numSiblings: Number(document.getElementById('numSiblings').value || 0),
+
+      isFirstGraduateClaim: document.getElementById('isFirstGraduateClaim').value,
+      fatherGraduate: document.getElementById('fatherGraduate').value,
+      motherGraduate: document.getElementById('motherGraduate').value,
+      siblingsGraduate: document.getElementById('siblingsGraduate').value,
+      hasFirstGraduateCertificate: document.getElementById('hasFirstGraduateCertificate').value,
+
+      isDisabled: document.getElementById('isDisabled').checked,
+      disabilityPercent: Number(document.getElementById('disabilityPercent').value || 0),
+
+      hasSports: document.getElementById('hasSports').checked,
+      sportsLevel: document.getElementById('sportsLevel').value,
+      isSingleParent: document.getElementById('isSingleParent').checked
+    };
+
+    appState.profile = profile;
+    setStore('profile', profile);
+
+    alert("Profile saved successfully!");
+    show('dashboardScreen');
+  }
+
+  function loadProfile() {
+    const p = appState.profile;
+    if (!p) return;
+
+    document.getElementById('name').value = p.name || '';
+    document.getElementById('email').value = p.email || '';
+    document.getElementById('phone').value = p.phone || '';
+    document.getElementById('district').value = p.district || '';
+
+    document.getElementById('tenthPercent').value = p.tenthPercent || '';
+    document.getElementById('twelfthPercent').value = p.twelfthPercent || '';
+    document.getElementById('cutoff').value = p.cutoff || '';
+    document.getElementById('studyMode').value = p.studyMode || 'day_scholar';
+    document.getElementById('studyLanguage').value = p.studyLanguage || 'tamil';
+
+    document.getElementById('fatherOccupation').value = p.fatherOccupation || '';
+    document.getElementById('fatherJobType').value = p.fatherJobType || '';
+    document.getElementById('fatherIncome').value = p.fatherIncome || '';
+
+    document.getElementById('motherOccupation').value = p.motherOccupation || '';
+    document.getElementById('motherJobType').value = p.motherJobType || '';
+    document.getElementById('motherIncome').value = p.motherIncome || '';
+
+    document.getElementById('numSiblings').value = p.numSiblings || '';
+
+    document.getElementById('isFirstGraduateClaim').value = p.isFirstGraduateClaim || 'yes';
+    document.getElementById('fatherGraduate').value = p.fatherGraduate || 'no';
+    document.getElementById('motherGraduate').value = p.motherGraduate || 'no';
+    document.getElementById('siblingsGraduate').value = p.siblingsGraduate || 'no';
+    document.getElementById('hasFirstGraduateCertificate').value = p.hasFirstGraduateCertificate || 'yes';
+
+    document.getElementById('isDisabled').checked = p.isDisabled || false;
+    document.getElementById('disabilityPercent').value = p.disabilityPercent || '';
+    document.getElementById('hasSports').checked = p.hasSports || false;
+    document.getElementById('sportsLevel').value = p.sportsLevel || 'district';
+    document.getElementById('isSingleParent').checked = p.isSingleParent || false;
+
+    toggleDisability();
+  }
+
+  // FIXED ELIGIBILITY FUNCTION
+  function getEligibleScholarships() {
+    const p = appState.profile || {};
+    const firstGraduateCheck = checkFirstGraduateEligibility(p);
+
+    return scholarships.filter(s => {
+      if (s.id === 1) return true; // Always show First Graduate scholarship
+      if (s.id === 2) return p.twelfthPercent >= 85;
+      if (s.id === 3) return p.isDisabled && p.disabilityPercent >= 40;
+      if (s.id === 4) return p.hasSports;
+      if (s.id === 5) return p.isSingleParent;
+      return false;
+    }).map(s => ({
+      ...s,
+      eligible:
+        s.id === 1 ? firstGraduateCheck.eligible :
+        true,
+      verificationStatus:
+        s.id === 1 ? firstGraduateCheck.status : "Eligible",
+      reason:
+        s.id === 1 ? firstGraduateCheck.reason :
+        s.id === 2 ? "Eligible due to high academic performance." :
+        s.id === 3 ? "Eligible based on disability percentage." :
+        s.id === 4 ? "Eligible due to sports participation." :
+        s.id === 5 ? "Eligible due to single parent status." :
+        ""
+    }));
+  }
+
+  function renderDashboard() {
+    const scholarshipGrid = document.getElementById('scholarshipsGrid');
+    const trackingGrid = document.getElementById('trackingGrid');
+    const remindersGrid = document.getElementById('remindersGrid');
+
+    const eligible = getEligibleScholarships();
+
+    scholarshipGrid.innerHTML = eligible.length ? eligible.map(s => `
+      <div class="scholarship-card">
+        <h3>${s.name}</h3>
+        <p><strong>Amount:</strong> ${s.amount}</p>
+        <p><strong>Last Date:</strong> ${s.lastDate}</p>
+        <div class="mt-1">
+          ${s.chips.map(c => `<span class="chip ${c}">${c.replace('_',' ')}</span>`).join('')}
+        </div>
+        <div class="${getVerificationBadgeClass(s.verificationStatus)}">${s.verificationStatus || "Eligible"}</div>
+        <p class="mt-1"><small>${s.reason}</small></p>
+        <button class="btn btn-primary mt-1" onclick="openDetails(${s.id})">View Details</button>
+      </div>
+    `).join('') : `<p>No scholarships found. Please fill your profile properly.</p>`;
+
+    trackingGrid.innerHTML = eligible.length ? eligible.map(s => {
+      const status = appState.applications[s.id] || "not_applied";
+      return `
+        <div class="scholarship-card">
+          <h3>${s.name}</h3>
+          <span class="status ${status.replace('_', '-')}">${status.replace('_', ' ')}</span>
+        </div>
+      `;
+    }).join('') : `<p>No tracking data available.</p>`;
+
+    remindersGrid.innerHTML = eligible.length ? eligible.map(s => `
+      <div class="scholarship-card">
+        <h3>${s.name}</h3>
+        <p>Deadline: <strong>${s.lastDate}</strong></p>
+      </div>
+    `).join('') : `<p>No reminders available.</p>`;
+  }
+
+  function openDetails(id) {
+    const scholarship = scholarships.find(s => s.id === id);
+    if (!scholarship) return;
+    selectedScholarship = scholarship;
+
+    const eligible = getEligibleScholarships().find(s => s.id === id);
+
+    document.getElementById('scholarshipName').innerText = scholarship.name;
+    document.getElementById('scholarshipAmount').innerText = scholarship.amount;
+    document.getElementById('scholarshipLastDate').innerText = scholarship.lastDate;
+    document.getElementById('scholarshipEligibility').innerText = scholarship.eligibility;
+    document.getElementById('scholarshipDocs').innerText = scholarship.docs;
+    document.getElementById('scholarshipReason').innerText = eligible?.reason || '';
+    document.getElementById('scholarshipVerification').innerText = eligible?.verificationStatus || 'Eligible';
+    document.getElementById('officialLink').href = scholarship.officialLink;
+    document.getElementById('statusSelect').value = appState.applications[id] || "not_applied";
+
+    show('detailsScreen');
+  }
+
+  document.getElementById('saveStatusBtn').addEventListener('click', () => {
+    if (!selectedScholarship) return;
+    const status = document.getElementById('statusSelect').value;
+    appState.applications[selectedScholarship.id] = status;
+    setStore('applications', appState.applications);
+    alert("Application status updated!");
+    renderDashboard();
+  });
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+    });
+  });
+
+  loadProfile();
+  renderDashboard();
+</script>
+
+</body>
+</html>
